@@ -1,121 +1,98 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <assert.h>
+#include <iostream>
 
-typedef struct node {
-    int value;
-    struct node* next;
-} node_t;
+struct List {
+private:
+    struct Node {
+        int data;
+        Node* next;
+        Node(int val) : data(val), next(nullptr) {}
+    };
+    Node* head;
 
-typedef struct {
-    node_t* head;
-    size_t size;
-} abstract_data_t;
-
-static node_t* create_node(int value) {
-    node_t* n = (node_t*)malloc(sizeof(node_t));
-    n->value = value;
-    n->next = NULL;
-    return n;
-}
-
-static void push_back(abstract_data_t* list, int value) {
-    node_t* n = create_node(value);
-    if (!list->head) {
-        list->head = n;
-    } else {
-        node_t* temp = list->head;
-        while (temp->next) temp = temp->next;
-        temp->next = n;
+public:
+    List() : head(nullptr) {}
+    
+    ~List() {
+        Node* current = head;
+        while (current != nullptr) {
+            Node* next = current->next;
+            delete current;
+            current = next;
+        }
     }
-    list->size++;
-}
-
-//Реализация интерфейса 
-abstract_data_t make_empty() {
-    abstract_data_t list;
-    list.head = NULL;
-    list.size = 0;
-    return list;
-}
-
-abstract_data_t make_of_size(size_t n) {
-    abstract_data_t list = make_empty();
-    for (size_t i = 0; i < n; i++)
-        push_back(&list, 0);
-    return list;
-}
-
-abstract_data_t make_from_array(const int arr[], size_t n) {
-    abstract_data_t list = make_empty();
-    for (size_t i = 0; i < n; i++)
-        push_back(&list, arr[i]);
-    return list;
-}
-
-abstract_data_t make_copy(const abstract_data_t* src) {
-    abstract_data_t copy = make_empty();
-    node_t* cur = src->head;
-    while (cur) {
-        push_back(&copy, cur->value);
-        cur = cur->next;
+    
+    void add(int value) {
+        Node* newNode = new Node(value);
+        if (!head) {
+            head = newNode;
+        } else {
+            Node* current = head;
+            while (current->next) {
+                current = current->next;
+            }
+            current->next = newNode;
+        }
     }
-    return copy;
-}
-
-void clear(abstract_data_t* list) {
-    node_t* cur = list->head;
-    while (cur) {
-        node_t* next = cur->next;
-        free(cur);
-        cur = next;
+    
+    void remove(int value) {
+        Node* current = head;
+        Node* prev = nullptr;
+        while (current) {
+            if (current->data == value) {
+                if (!prev) {
+                    head = current->next;
+                } else {
+                    prev->next = current->next;
+                }
+                delete current;
+                return;
+            }
+            prev = current;
+            current = current->next;
+        }
     }
-    list->head = NULL;
-    list->size = 0;
-}
-
-int at(const abstract_data_t* list, int index) {
-    if (list->size == 0) return 0;
-    if (index < 0) index = (int)list->size + index;
-    if (index < 0) index = 0;
-    if ((size_t)index >= list->size) index = (int)list->size - 1;
-
-    node_t* cur = list->head;
-    for (int i = 0; i < index; i++)
-        cur = cur->next;
-    return cur->value;
-}
-
-bool is_equal(const abstract_data_t* a, const abstract_data_t* b) {
-    if (a->size != b->size)
-        return false;
-    node_t* na = a->head;
-    node_t* nb = b->head;
-    while (na && nb) {
-        if (na->value != nb->value)
-            return false;
-        na = na->next;
-        nb = nb->next;
+    
+    int get(int index) const {
+        Node* current = head;
+        int count = 0;
+        while (current) {
+            if (count == index) {
+                return current->data;
+            }
+            current = current->next;
+            count++;
+        }
+        throw std::out_of_range("Индекс за пределами");
     }
-    return true;
-}
+    
+    void print() const {
+        Node* current = head;
+        while (current) {
+            std::cout << current->data << " ";
+            current = current->next;
+        }
+        std::cout << std::endl;
+    }
+};
 
-//Проверка
 int main() {
-    int array[] = {1, 4, 7, 9};
-    abstract_data_t a = make_from_array(array, 4);
-
-    assert(9 == at(&a, 3));
-    assert(9 == at(&a, -1));
-    assert(9 == at(&a, 13));
-    assert(1 == at(&a, -13));
-
-    abstract_data_t b = make_copy(&a);
-    assert(is_equal(&a, &b));
-
-    clear(&a);
-    clear(&b);
-
-    printf("Задание для лаборатной работы номер 1 выполнено");
+    List list;
+    list.add(10);
+    list.add(20);
+    list.add(30);
+    
+    std::cout << "Содержимое списка ";
+    list.print();
+    
+    list.remove(20);
+    std::cout << "После удаления: ";
+    list.print();
+    
+    try {
+        std::cout << "Элемент с индексом 1 " << list.get(1) << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "Ошибка: " << e.what() << std::endl;
+    }
+    
     return 0;
 }
